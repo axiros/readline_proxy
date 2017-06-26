@@ -91,9 +91,7 @@ rl_handle_enter () {
     if ! $rl_is_ml;  then
         rl_special_check || { rl_go_ml; return; } # multline python
         rl_check_ml      || { rl_go_ml; return; }
-    fi
-    # multline continuation if not ending with .:
-    $rl_is_ml && {
+    else
         # here doc?
         if [[ "x$rl_here_doc" != "x" ]]; then
             # here doc end token (occurs in first line):
@@ -103,7 +101,7 @@ rl_handle_enter () {
         else
             ends_with '.' || { rl_go_ml; return; }
         fi
-    }
+    fi
     rl_set_cmd
     $rl_is_special_mode && rl_special_cmd
     rl_reset
