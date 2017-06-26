@@ -11,7 +11,7 @@ rl_special_welcome_msg () {
     "
     rl_is_special_mode=false
 }
-rl_special_check () {
+rl_special_check_ml () {
     # if we start with a ' ' we run it as python
     starts_with ' ' || return 0
     rl_is_special_mode=true                # set this if the line is special
@@ -20,6 +20,11 @@ rl_special_check () {
     # (for the price of having to terminate line 1 of multiliners with : or ;)
     ends_with ':' && return 1 || return 0  # multiline mode if ends with :
 }
+
+rl_special_check_ml_end () {
+    return # the standard endswith . check is ok for us
+}
+
 rl_special_cmd () { rl_cmd='python -c "'$rl_cmd'"'; }
 
 
@@ -36,24 +41,37 @@ _R= # contains (multiline) $READLINE_LINE
 rl_cmd=
 
 rl_check_ml () {
-    # this is run for first lines only
+    # bash multline expression begins? This is run for the first line only:
+    # returns 1 when this is the start of a ml expression
+    rl_special_check_ml || return 1
     # here doc, no here string?
     if [[ "$_R" == *"<<"* ]] && [[ "$_R" != *"<<<"* ]]; then
         rl_here_doc="$_R"
         # already a multiline doc (e.g. from history?):
         [[ "$_R" != *$'\n'* ]] && return 1
     else
-        # right strip:
-        while true; do
-            ends_with ' ' && _R="${_R::-1}" || break
-        done
+        rstrip
         # force ml with '$' at the end:
         ends_with '$' && { _R="${_R::-1}"; return 1; }
         # else these trigger multiline mode:
-        ends_with ';'   && return 1
-        ends_with ' do' && return 1
+        local IFS=' ' && for c in ';' '{' '(' '[' ' do'; do
+            ends_with "$c" && return 1
+        done
     fi
     return 0
+}
+
+rl_check_ml_end () {
+    # only run when multiline is already set (i.e. not for first lines)
+    # also not run for here docs
+    # returns 1 when this is the end of a ml expression
+    local orig="$_R"; rstrip
+    rl_special_check_ml_end || return 1
+    ends_with '.' && return 1 # forcing eval
+    local IFS=' ' && for c in 'done' ']' '}' 'fi' 'esac' ')'; do
+        ends_with $'\n> '$c'' && return 1
+    done
+    _R="$orig" # no multiline end, keep as it was
 }
 
 rl_reset () {
@@ -64,8 +82,8 @@ rl_reset () {
     rl_here_doc=
 }
 
-# mimicking bash's behaviour for mulitline expressions "\n> ":
 rl_go_ml () {
+    # mimicking bash's behaviour for mulitline expressions "\n> ":
     READLINE_LINE="${_R}$rl_nl"
     READLINE_POINT=${#READLINE_LINE}
     rl_is_ml=true
@@ -78,8 +96,12 @@ rl_set_cmd () {
     ends_with $'\n' && rl_cmd="${rl_cmd::-1}" || true
 }
 
-ends_with ()   { local l="${#1}"; test "x${_R: -$l}" == "x$1" || return 1; }
+ends_with   () { local l="${#1}"; test "x${_R: -$l}" == "x$1" || return 1; }
 starts_with () { local l="${#1}"; test "x${_R:0:$l}" == "x$1" || return 1; }
+rstrip      () {
+    while true; do ends_with ' ' && _R="${_R::-1}" || break
+    done
+}
 
 
 # --------------------------------------------------------------- Enter Handler
@@ -89,8 +111,7 @@ rl_handle_enter () {
     _R="${_R/%$rl_bsl/$rl_nl}"
 
     if ! $rl_is_ml;  then
-        rl_special_check || { rl_go_ml; return; } # multline python
-        rl_check_ml      || { rl_go_ml; return; }
+        rl_check_ml || { rl_go_ml; return; }
     else
         # here doc?
         if [[ "x$rl_here_doc" != "x" ]]; then
@@ -99,7 +120,7 @@ rl_handle_enter () {
                 rl_go_ml; return
             fi
         else
-            ends_with '.' || { rl_go_ml; return; }
+            rl_check_ml_end && { rl_go_ml; return; } || true
         fi
     fi
     rl_set_cmd

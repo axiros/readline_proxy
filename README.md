@@ -9,7 +9,7 @@ This enables custom interactive REPLs, while still providing
 This is an example where we decided to run expressions within a python
 interpreter if their first line starts with a space.
 
-[![asciicast](https://asciinema.org/a/ECilkB2ymMV12txtqSRVjvZJd.png)](https://asciinema.org/a/ECilkB2ymMV12txtqSRVjvZJd)
+[![asciicast](https://asciinema.org/a/PMzhWUoburk7MFEGz2T11mrsl.png)](https://asciinema.org/a/PMzhWUoburk7MFEGz2T11mrsl)
 
 This is for sure not super useful as is, but think of `python -c` being replaced by e.g. interactions with a (stateful) (co)process via bash functions.
 
@@ -19,9 +19,11 @@ source the script and supply the functions on top with your own versions.
 You are getting called for
 
 - the welcome message
-- the decision if an entered line is 'special'
+- the decision if an entered line is 'special' and also if it is the first of a
+  multiline
+- each line in a multiline expression where you can decide if it is complete
 - before such a 'special' expression is pushed to the history and run, so that you can
-  decide what to really run.
+  decide what to really run (and put into the history).
 
 
 ### WTFs
@@ -37,36 +39,36 @@ Behaviour when sourcing scripts or running them should be of no difference.
 
 ##### Short Version
 
-1. End the first lines with a semicolon (or a '$' if syntax is preventing that)
-2. End the whole expression with a dot
-
-and all will work
+(De-)indent your multline code you enter correctly and you'll have no problems.
 
 ##### Details
 
 If a line is not 'special', i.e. entered bash expressions we must support multiline entry mode. We are by far not as smart as bash regarding that - but hopefully tolerable.
 
-Currently we look at (whitespace cleared) endings of those lines to derive that we shall switch to multiline mode automatically.
+Currently we look at (whitespace cleared) endings of those lines to derive that we shall switch to multiline mode automatically and evaluate it when it is complete.
 
-We set multiline mode if the right-stripped first line ends with
+How?
 
-- ';'
-- ' do'
-- '$' (convention to force multiline mode. the character is removed at evaluation time)
+We set  multiline mode if the right-stripped first line ends with ';' '{' '(' '[' ' do'
+We stop multiline mode if the right-stripped last line ends with
+`\n> ` plus 'done' ']' '}' 'fi' 'esac' ')'
+
+You can force start and end of multiline mode by putting '$' at start and/or
+'.' at the end of a line. Both characters are removed before evaluation.
 
 
-- Biggest wtf: You have to end them with a dot, to trigger evaluation. Sorry, not yet understood
-  how bash knows when to evaluate. Trying to catch `syntax error: unexpected end of file` on
+Note:Sorry, not yet understood how *exactly* bash knows when to start / stop multiline mode. Trying to catch `syntax error: unexpected end of file` on
   stderr was a dead end road in deed (`tee`-ing stderr when user command is e.g. `bash` is a blocker).
-- (Only) on the first line of a multiline expression you have to supply either ";"
-- Here document first lines and terminators are detected without any begin/end indicators.
-- We store multiline expressions "as is" - i.e. w/o merging them into a single line, using semicolons as bash does.
+
+- [Here document](http://tldp.org/LDP/abs/html/here-docs.html) first lines and terminators are detected without any begin/end indicators.
+
+- We store multiline expressions "as is" - i.e. *NOT* merging them into a single line, using semicolons as bash does.
 
 
 #### Prompt
 
 - Normally you see your command on stdout before the result is shown. Now you
-  get it on stderr and the prompt is just a $ infront of it
+  get it on stderr and the prompt is just a '$' infront of it
 
 
 
@@ -82,15 +84,14 @@ while normal behaviour is this:
     1 ~ $ bind -P |grep accept
     accept-line can be found on "\C-j", "\C-m".
 
-Since it seems not possible to invoke readline's standard accept-line behaviour  in a custom enter handler, this repo was created.
+Since it seems not possible to invoke readline's standard accept-line behaviour  in a custom enter handler, this was created.
 
 What it does is basically:
 
 - checks for customizable criteria if the current line should be treated "special"
 - checks if it looks like a bash multiline expression and starts asking for
-  more input until that multiline expression is deemed complete (e.g. here doc
-  terminator or '.' entered)
-- when an expression is deemed complete it is pushed to the history - and run
+  more input until that multiline expression is deemed complete
+  - when an expression is deemed complete it is pushed to the history - and run
   via `fc -s`.
 - fc repeats the command on stderr, we just add a "$" prompt before it.
 
