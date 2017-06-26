@@ -34,13 +34,16 @@ rl_here_doc=
 rl_is_ml=false           # is multiline
 _R= # contains (multiline) $READLINE_LINE
 rl_cmd=
+
 rl_check_ml () {
     # this is run for first lines only
+    # here doc, no here string?
     if [[ "$_R" == *"<<"* ]] && [[ "$_R" != *"<<<"* ]]; then
         rl_here_doc="$_R"
         # already a multiline doc (e.g. from history?):
         [[ "$_R" != *$'\n'* ]] && return 1
     else
+        # right strip:
         while true; do
             ends_with ' ' && _R="${_R::-1}" || break
         done
@@ -49,7 +52,6 @@ rl_check_ml () {
         # else these trigger multiline mode:
         ends_with ';'   && return 1
         ends_with ' do' && return 1
-        # here doc, no here string?
     fi
     return 0
 }
@@ -82,7 +84,7 @@ starts_with () { local l="${#1}"; test "x${_R:0:$l}" == "x$1" || return 1; }
 
 # --------------------------------------------------------------- Enter Handler
 rl_handle_enter () {
-    local _R="$READLINE_LINE"
+    _R="$READLINE_LINE"
     # replace backslash with new line:
     _R="${_R/%$rl_bsl/$rl_nl}"
 
