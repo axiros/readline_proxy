@@ -35,11 +35,11 @@ Behaviour when sourcing scripts or running them should be of no difference.
 
 #### Multiline Expressions
 
-- Biggst diff: You have to end them with a dot, to trigger evaluation. Not yet understood
+- Biggest wtf: You have to end them with a dot, to trigger evaluation. Sorry, not yet understood
   how bash knows when to evaluate. Trying to catch `syntax error: unexpected end of file` on
-  stderr was a dead end road.
-- Here document terminators are detected w/o that dot
-- We store multiline expressions, i.e. w/o merging them into a single line using semicolons as bash does
+  stderr was a dead end road in deed (`tee`-ing stderr when user command is e.g. `bash` is a blocker).
+- Here document terminators are detected w/o that dot, escaped or not.
+- We store multiline expressions "as is" - i.e. w/o merging them into a single line, using semicolons as bash does.
 
 #### Prompt
 
@@ -50,7 +50,7 @@ Behaviour when sourcing scripts or running them should be of no difference.
 
 ## Tech
 
-bash allows to provide custom key-bindings via the `bind` function.
+bash allows to provide custom key-bindings via the `bind` function.   
 This passes any enter-key hit into a custom function:
 
     bind -x '"\C-M": "rl_handle_enter"'
