@@ -10,6 +10,8 @@ This is an example where we decided to run expressions within a python
 interpreter if their first line starts with a space.
 
 [![asciicast](https://asciinema.org/a/PMzhWUoburk7MFEGz2T11mrsl.png)](https://asciinema.org/a/PMzhWUoburk7MFEGz2T11mrsl)
+<font size="-3">asciinema rec --title="readline_proxy" -w 0.5</font>
+
 
 This is for sure not super useful as is, but think of `python -c` being replaced by e.g. interactions with a (stateful) (co)process via bash functions.
 
