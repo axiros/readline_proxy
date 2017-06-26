@@ -1,5 +1,7 @@
 # Readline Proxy
 
+[![Build Status](https://travis-ci.org/axiros/readline_proxy.svg?branch=master)](https://travis-ci.org/axiros/readline_proxy)
+
 This enables custom interactive REPLs, while still providing
 (as far as possible) normal shell/readline/history behaviour and without leaving the current process.
 
