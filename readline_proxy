@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# ------------------------------------------------------------------- OVERWRITE
+# after sourcing this overwrite these 3 functions for your own enter handler
+rl_special_welcome_msg () {
+    test -z "$rl_is_special_mode" || { echo 'already in "p mode"'; return 1; }
+    echo -e ""p mode" is on:
+    - expressions starting with space are evaluated as python
+    - end multiline expressions with a '.'
+    - here doc terminators are understood, no '.' required
+    "
+    rl_is_special_mode=false
+}
+rl_special_check () {
+    # if we start with a ' ' we run it as python
+    starts_with ' ' || return 0
+    rl_is_special_mode=true                # set this if the line is special
+    _R="${_R#" "}"                         # remove the space
+    rl_is_ml=true # comment out if you don't want to terminate single liners with .
+    # (for the price of having to terminate line 1 of multiliners with : or ;)
+    ends_with ':' && return 1 || return 0  # multiline mode if ends with :
+}
+rl_special_cmd () { rl_cmd='python -c "'$rl_cmd'"'; }
+
+
+# ----------------------------------------------------------------------- Tools
+# gnu compliant tooling (not anymore required)
+#_gbin="/usr/local/opt/coreutils/libexec/gnubin/" # brew install coreutils
+#test -e "$_gbin" && PATH="$_gbin:$PATH" || true  # no op on linux
+
+rl_nl=$'\n> '            # newline for partial expressions
+rl_bsl='\\'              # backslash
+rl_here_doc=
+rl_is_ml=false           # is multiline
+_R= # contains (multiline) $READLINE_LINE
+rl_cmd=
+rl_check_ml () {
+    # this is run for first lines only
+    if [[ "$_R" == *"<<"* ]] && [[ "$_R" != *"<<<"* ]]; then
+        rl_here_doc="$_R"
+        # already a multiline doc (e.g. from history?):
+        [[ "$_R" != *$'\n'* ]] && return 1
+    else
+        while true; do
+            ends_with ' ' && _R="${_R::-1}" || break
+        done
+        # force ml with '$' at the end:
+        ends_with '$' && { _R="${_R::-1}"; return 1; }
+        # else these trigger multiline mode:
+        ends_with ';'   && return 1
+        ends_with ' do' && return 1
+        # here doc, no here string?
+    fi
+    return 0
+}
+
+rl_reset () {
+    READLINE_LINE=
+    READLINE_POINT=0
+    rl_is_ml=false
+    rl_is_special_mode=false
+    rl_here_doc=
+}
+
+# mimicking bash's behaviour for mulitline expressions "\n> ":
+rl_go_ml () {
+    READLINE_LINE="${_R}$rl_nl"
+    READLINE_POINT=${#READLINE_LINE}
+    rl_is_ml=true
+}
+
+rl_set_cmd () {
+    # foo\n> bar -> foo\nbar:
+    rl_cmd="${_R//$'\n> '/$'\n'}"
+    ends_with '.' && $rl_is_ml && rl_cmd="${rl_cmd::-1}" || true
+    ends_with $'\n' && rl_cmd="${rl_cmd::-1}" || true
+}
+
+ends_with ()   { local l="${#1}"; test "x${_R: -$l}" == "x$1" || return 1; }
+starts_with () { local l="${#1}"; test "x${_R:0:$l}" == "x$1" || return 1; }
+
+
+# --------------------------------------------------------------- Enter Handler
+rl_handle_enter () {
+    local _R="$READLINE_LINE"
+    # replace backslash with new line:
+    _R="${_R/%$rl_bsl/$rl_nl}"
+
+    if ! $rl_is_ml;  then
+        rl_special_check || { rl_go_ml; return; } # multline python
+        rl_check_ml      || { rl_go_ml; return; }
+    fi
+    # multline continuation if not ending with .:
+    $rl_is_ml && {
+        # here doc?
+        if [[ "x$rl_here_doc" != "x" ]]; then
+            # here doc end token (occurs in first line):
+            if [[ "$rl_here_doc" != *"`echo "${_R##*$'\n> '}"`"* ]]; then
+                rl_go_ml; return
+            fi
+        else
+            ends_with '.' || { rl_go_ml; return; }
+        fi
+    }
+    rl_set_cmd
+    $rl_is_special_mode && rl_special_cmd
+    rl_reset
+    history -s "$rl_cmd"
+    builtin echo -n "$ " # PS1 is surprisingly hard in bash<4.4. We do $ only.
+    # fc prints the command at the beginning:
+    fc -s
+}
+
+rl_special_welcome_msg || return
+bind -x '"\C-M": "rl_handle_enter"'
+
