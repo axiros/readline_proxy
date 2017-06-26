@@ -35,6 +35,15 @@ Behaviour when sourcing scripts or running them should be of no difference.
 
 #### Multiline Expressions
 
+##### Short Version
+
+1. End the first lines with a semicolon (or a '$' if syntax is preventing that)
+2. End the whole expression with a dot
+
+and all will work
+
+##### Details
+
 If a line is not 'special', i.e. entered bash expressions we must support multiline entry mode. We are by far not as smart as bash regarding that - but hopefully tolerable.
 
 Currently we look at (whitespace cleared) endings of those lines to derive that we shall switch to multiline mode automatically.
