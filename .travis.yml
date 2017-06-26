@@ -10,6 +10,8 @@ addons:
 
 before_script:
   - "echo 'starting'"
+  - "echo "`which expect`"
+
 
 script:
     ./tests/run

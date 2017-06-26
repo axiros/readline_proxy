@@ -1,4 +1,4 @@
-#!/usr/bin/env expect -f
+#!/usr/bin/expect -f
 set timeout 1
 set rl [lindex $argv 0]
 spawn $env(SHELL)
