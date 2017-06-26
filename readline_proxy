@@ -6,7 +6,7 @@ rl_special_welcome_msg () {
     test -z "$rl_is_special_mode" || { echo 'already in "p mode"'; return 1; }
     echo -e ""p mode" is on:
     - expressions starting with space are evaluated as python
-    - end multiline expressions with a '.'
+    - end multiline expressions with a '.' or by correct de-indentation
     - here doc terminators are understood, no '.' required
     "
     rl_is_special_mode=false

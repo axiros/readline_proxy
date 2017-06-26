@@ -1,0 +1,9 @@
+#!/bin/bash
+
+here="$(unset CDPATH && cd "$(dirname "$BASH_SOURCE")" && echo $PWD)"
+D="`unset CDPATH && cd "$here" && cd .. && echo $PWD`"
+echo $here
+echo $D
+
+$here/expect "$D/readline_proxy"
+
