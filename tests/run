@@ -31,7 +31,10 @@ def get_res():
 def check(op, what):
     r = get_res()
     if not op(r, what):
-        raise Exception('Expected \n<snip>\n%s</snip>\n %s "%s"' % (r, op.__name__, what))
+        raise Exception('Expected \n<snip>\n%s</snip>\n %s "%s"' % (
+            r, op.__name__, what))
+
+expect = lambda what: check(contains, what)
 
 def send(s, term='\n'):
     time.sleep(0.05)
@@ -44,8 +47,9 @@ if pid == 0:
     sys.exit(0)
 
 def title(*msg):
+    pref = '' if msg[0][0] == msg[0][0].upper() else 'Testing '
     msg = ' '.join([str(s).strip() for s in msg])
-    print(msg.capitalize())
+    print(pref + msg)
 
 output = os.read(fd,1024)
 thread.start_new_thread(in_reader, ())
@@ -53,81 +57,87 @@ thread.start_new_thread(in_reader, ())
 
 title('Clearing history')
 send('history -c')
-check(contains, '$')
+expect('$')
 
-title('Testing the test - does autocomplete work')
-send('ls -lta ../readline_pr\t')
-check(contains, '.travis.yml')
+title('the test - does autocomplete work')
+send('ls -lta ../readline_pr\t') # :-)))
+expect('.travis.yml')
 
 title('sourcing', script)
 send('source "%s"' % script)
 send('source "%s"' % script)
-check(contains, 'already in')
+expect('already in')
 
-title('testing autocomplete')
+title('autocomplete')
 send('ls -lta ../readline_pr\t')
-check(contains, '.travis.yml')
+expect('.travis.yml')
 
-title('testing multline')
+title('multline')
 send('for i in hey 2; do')
-check(contains, '2; do\n> ')
+expect('2; do\n> ')
 send('echo $i$i')
 send('done')
-check(contains, 'echo $i$i\n> done\nheyhey\n22')
+expect('echo $i$i\n> done\nheyhey\n22')
 
-title('testing here doc')
+title('here doc')
 send('cat << xx')
 send('first line')
 send('  second line')
 send('xx')
-check(contains, 'cat << xx\n> first line\n>   second line\n> xx\nfirst line\n  second line')
+expect('cat << xx\n> first line\n>   second line\n> xx\nfirst line\n  second line')
 
 
-title('testing here strings')
+title('here strings')
 send('read a b <<< "foo bar"')
 send('echo "$a.$b"')
-check(contains, 'foo.bar')
+expect('foo.bar')
 
-title('testing python singleline')
+title('python singleline')
 send(' print(17*17)\r')
-check(contains, '289')
+expect('289')
 
 
-title('testing python multiline')
+title('python multiline')
 send(' for i in range(100):', term='\r')
 send('    print(i)', term='\r')
 send('.', term='\r')
-check(contains, '42')
+expect('42')
 
-title('testing python multiline - semicolon sep')
+title('python multiline - semicolon sep')
 send(' import sys;', term='\r')
 send('print (sys.version_info).', term='\r')
-check(contains, 'releaselevel')
+expect('releaselevel')
 
-title('testing subshell')
+title('subshell')
 send('( echo line1;')
 send('echo line2')
 send(')')
-check(contains, 'line1\nline2')
+expect('line1\nline2')
 
 
-title('testing functions')
+title('functions')
 send('myfunc () {')
 send(' echo infunc$1')
 send('}')
 send('myfunc foo')
-check(contains, 'infuncfoo')
+expect('infuncfoo')
 
 
 
-title('testing dollar and dot forced ml switches')
+title('dollar and dot forced ml switches')
 send('( echo foo$', term='\r')
 send('echo bar).', term='\r')
-check(contains, 'foo\nbar')
+expect('foo\nbar')
 
 title('multiline assigns')
 send('myvar="foo$', term='\r') # The need for $ sucks. we really should detect this.
 send('baz".', term='\r')
 send('echo -e "$myvar"')
-check(contains, 'foo\nbaz')
+expect('foo\nbaz')
 
+title('history')
+send('!8')
+expect('289')
+
+send('history')
+print(get_res())
