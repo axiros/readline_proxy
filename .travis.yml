@@ -6,7 +6,6 @@ python:
 
 before_script:
   - "echo 'starting'"
-  - "which expect"
 
 
 script:
