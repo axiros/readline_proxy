@@ -43,7 +43,10 @@ Behaviour when sourcing scripts or running them should be of no difference.
 
 ##### Short Version
 
-(De-)indent your multline code you enter correctly and you'll have no problems.
+- (De-)indent your multline code you enter correctly
+- multiline assignments like `myvar="foo\nbar"`
+
+and you'll normally won't have problems.
 
 ##### Details
 
