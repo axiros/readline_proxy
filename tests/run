@@ -1,9 +1,94 @@
-#!/bin/bash
+#!/usr/bin/env python2 -u
+
+'''
+Testing readline requires a real terminal, we need to use pty
+'''
+
+import os,sys,time,thread
+import Queue
+from operator import contains
+script = os.path.abspath(sys.argv[1])
+os.chdir(script.rsplit('/', 1)[0])
+
+stdout = Queue.Queue()
+pid,fd = os.forkpty()
+
+def in_reader():
+    while 1:
+        # \r\n vs \n is not of interest:
+        stdout.put(os.read(fd, 1000).replace('\r', ''))
+
+def get_res():
+    res = ''
+    while 1:
+        try:
+            res += stdout.get(timeout=0.1)
+        except Queue.Empty:
+            return res
+
+def check(op, what):
+    r = get_res()
+    if not op(r, what):
+        raise Exception('Expected \n<snip>\n%s</snip>\n %s "%s"' % (r, op.__name__, what))
+
+def send(s, term='\n'):
+    time.sleep(0.05)
+    os.write(fd, s + term)
+
+if pid == 0:
+    os.execv('/bin/bash',['/bin/bash'])
+    time.sleep(100) # this is new!
+    sys.exit(0)
+
+def title(*msg):
+    msg = ' '.join([str(s).strip() for s in msg])
+    print(msg.capitalize())
+
+output = os.read(fd,1024)
+thread.start_new_thread(in_reader, ())
 
 
-here="$(unset CDPATH && cd "$(dirname "$BASH_SOURCE")" && echo $PWD)"
-D="`unset CDPATH && cd "$here" && cd .. && echo $PWD`"
-echo $here
+title('Clearing history')
+send('history -c')
+check(contains, '$')
 
-$here/expect "$D/readline_proxy"
+title('Testing the test - does autocomplete work')
+send('ls -lta ../readline_pr\t')
+check(contains, '.travis.yml')
+
+title('sourcing', script)
+send('source "%s"' % script)
+send('source "%s"' % script)
+check(contains, 'already in')
+
+title('testing autocomplete')
+send('ls -lta ../readline_pr\t')
+check(contains, '.travis.yml')
+
+title('testing multline')
+send('for i in hey 2; do')
+check(contains, '2; do\n> ')
+send('echo $i$i')
+send('done')
+check(contains, 'echo $i$i\n> done\nheyhey\n22')
+
+title('testing here doc')
+send('cat << xx')
+send('first line')
+send('  second line')
+send('xx')
+check(contains, 'cat << xx\n> first line\n>   second line\n> xx\nfirst line\n  second line')
+
+
+title('testing python singleline')
+send(' print(17*17)\r')
+check(contains, '289')
+
+
+title('testing python multiline')
+send(' for i in range(100):', term='\r')
+send('    print(i)', term='\r')
+send('.', term='\r')
+check(contains, '42')
+
 

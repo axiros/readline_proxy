@@ -13,5 +13,28 @@ expect {
     timeout { exit 1 }
     "*READLINE_LINE*"
     }
+
+puts "bash tab completion"
+puts ""
+send -- "ls -lta ../readline\t\r"
+expect {
+    timeout { exit 1 }
+    "*travis.yml*"
+    }
+
+puts "bash multiline 1"
+puts ""
+send -- "\r"
+send -- "for i in test1 2; do\n"
+send -- "echo \$i\$i\n"
+send -- "done\n"
+expect {
+    timeout { exit 1 }
+    "*test1test1*"
+    }
+
+
+
+
 send -- ""
 expect eof

@@ -131,7 +131,6 @@ rl_handle_enter () {
     # fc prints the command at the beginning:
     fc -s
 }
-
 rl_special_welcome_msg || return
 bind -x '"\C-M": "rl_handle_enter"'
 
