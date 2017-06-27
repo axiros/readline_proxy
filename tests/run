@@ -80,6 +80,11 @@ send('xx')
 check(contains, 'cat << xx\n> first line\n>   second line\n> xx\nfirst line\n  second line')
 
 
+title('testing here strings')
+send('read a b <<< "foo bar"')
+send('echo "$a.$b"')
+check(contains, 'foo.bar')
+
 title('testing python singleline')
 send(' print(17*17)\r')
 check(contains, '289')
@@ -91,4 +96,35 @@ send('    print(i)', term='\r')
 send('.', term='\r')
 check(contains, '42')
 
+title('testing python multiline - semicolon sep')
+send(' import sys;', term='\r')
+send('print (sys.version_info).', term='\r')
+check(contains, 'releaselevel')
+
+title('testing subshell')
+send('( echo line1;')
+send('echo line2')
+send(')')
+check(contains, 'line1\nline2')
+
+
+title('testing functions')
+send('myfunc () {')
+send(' echo infunc$1')
+send('}')
+send('myfunc foo')
+check(contains, 'infuncfoo')
+
+
+
+title('testing dollar and dot forced ml switches')
+send('( echo foo$', term='\r')
+send('echo bar).', term='\r')
+check(contains, 'foo\nbar')
+
+title('multiline assigns')
+send('myvar="foo$', term='\r') # The need for $ sucks. we really should detect this.
+send('baz".', term='\r')
+send('echo -e "$myvar"')
+check(contains, 'foo\nbaz')
 
