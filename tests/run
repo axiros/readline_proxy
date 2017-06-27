@@ -2,6 +2,8 @@
 
 '''
 Testing readline requires a real terminal, we need to use pty
+
+Have not really understood \r vs \r\n in pty mode, but the tests seem to be realistic.
 '''
 
 import os,sys,time,thread
@@ -34,6 +36,7 @@ def check(op, what):
 def send(s, term='\n'):
     time.sleep(0.05)
     os.write(fd, s + term)
+    #os.write(fd, s + '\r')
 
 if pid == 0:
     os.execv('/bin/bash',['/bin/bash'])
