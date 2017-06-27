@@ -19,15 +19,18 @@ This is for sure not super useful as is, but think of `python -c` being replaced
 
 ## Usage
 
-source the script and supply the functions on top with your own versions.  
+source the script and supply the functions on top with your own versions.
 You are getting called for
 
 - the welcome message
+- the possibility to specify keywords for special mode (`rl_special_keywords`),
+  triggering special mode if first line begins with one of those
 - the decision if an entered line is 'special' and also if it is the first of a
   multiline
 - each line in a multiline expression where you can decide if it is complete
 - before such a 'special' expression is pushed to the history and run, so that you can
   decide what to really run (and put into the history).
+
 
 
 ### WTFs

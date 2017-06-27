@@ -72,7 +72,7 @@ title('autocomplete')
 send('ls -lta ../readline_pr\t')
 expect('.travis.yml')
 
-title('multline')
+title('multiline')
 send('for i in hey 2; do')
 expect('2; do\n> ')
 send('echo $i$i')
@@ -86,7 +86,6 @@ send('  second line')
 send('xx')
 expect('cat << xx\n> first line\n>   second line\n> xx\nfirst line\n  second line')
 
-
 title('here strings')
 send('read a b <<< "foo bar"')
 send('echo "$a.$b"')
@@ -96,17 +95,28 @@ title('python singleline')
 send(' print(17*17)\r')
 expect('289')
 
-
 title('python multiline')
 send(' for i in range(100):', term='\r')
 send('    print(i)', term='\r')
 send('.', term='\r')
 expect('42')
 
+title('rl_special_keywords')
+send('rl_special_keywords="print\nos\nsys\n"')
+send('print(18*18)\r') # no space needed now
+expect('324')
+
 title('python multiline - semicolon sep')
 send(' import sys;', term='\r')
 send('print (sys.version_info).', term='\r')
 expect('releaselevel')
+
+title('eval function overloading') # directly printing the result now
+f  = 'rl_special_cmd () '
+f += '{ python -c "import sys; print(\'result: \' + str($rl_cmd))"; }'
+send(f)
+send('sys.version_info', term='\r') # no space needed now
+expect('result: sys.version_info(major')
 
 title('subshell')
 send('( echo line1;')
@@ -114,15 +124,12 @@ send('echo line2')
 send(')')
 expect('line1\nline2')
 
-
 title('functions')
 send('myfunc () {')
 send(' echo infunc$1')
 send('}')
 send('myfunc foo')
 expect('infuncfoo')
-
-
 
 title('dollar and dot forced ml switches')
 send('( echo foo$', term='\r')
@@ -141,3 +148,6 @@ expect('289')
 
 send('history')
 print(get_res())
+
+
+print( '\n\nsuccessfully tested' )

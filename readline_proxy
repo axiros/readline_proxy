@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # ------------------------------------------------------------------- OVERWRITE
+rl_special_keywords=
+
 # after sourcing this overwrite these 3 functions for your own enter handler
 rl_special_welcome_msg () {
     test -z "$rl_is_special_mode" || { echo 'already in "p mode"'; return 1; }
@@ -12,8 +14,14 @@ rl_special_welcome_msg () {
     rl_is_special_mode=false
 }
 rl_special_check_ml () {
+    kw_match=false
+    local l="$_R"; for sep in ' ' '.' '(' '['; do l="${l%%$sep*}"; done
+    test -n "$l" && {
+        test "x"`echo -e "$rl_special_keywords" | grep -w "$l"`"" == "x$l" && \
+            kw_match=true
+    }
     # if we start with a ' ' we run it as python
-    starts_with ' ' || return 0
+    ! $kw_match && { starts_with ' ' || return 0; }
     rl_is_special_mode=true                # set this if the line is special
     _R="${_R#" "}"                         # remove the space
     rl_is_ml=true # comment out if you don't want to terminate single liners with .
